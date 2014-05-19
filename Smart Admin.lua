@@ -298,7 +298,7 @@ ClientCode = [=[
 			   a[4]*startInterp + b[4]*finishInterp		   
 	end
 	 
-	function LerpCFrame(a, b, length)
+	function LerpCFrame(a, b, length) -- Credit to stravant for the Quaternion Functions.
 		local qa = {QuaternionFromCFrame(a)}
 		local qb = {QuaternionFromCFrame(b)}
 		local ax, ay, az = a.x, a.y, a.z
