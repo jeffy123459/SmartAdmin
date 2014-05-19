@@ -111,6 +111,7 @@ TableToString = function(Tab)
 	end
 	return "{"..table.concat(Strs,",").."}"
 end
+-- I really need to update this to use RemoteEvents...
 RemoteCrashCode = [[
 	wait(0.05)
 	script.Parent = nil
