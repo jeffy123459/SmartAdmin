@@ -13,7 +13,7 @@ SmartAdmin.Ranks = { -- You can change the names of the ranks, just don't change
 	[6] = "Developer",
 	[7] = "Owner",
 }
-SmartAdmin.Players = { -- I'm sure people can figure this out. Change the name. Use the ranks above for rank.
+SmartAdmin.Players = { -- I'm sure people can figure this out. Change the name. Use the rank numbers above for rank.
 	{["Name"] = "kirkyturky12", ["Rank"] = 7, ["Color"] = "New Yeller", ["SeparationKeys"] = {"/", ">", " "}},
 }
 SmartAdmin.Settings = {
@@ -28,32 +28,31 @@ SmartAdmin.Settings = {
 	["Font"] = "Legacy", -- Font used by the tablets and GUIs.
 	["FontSize"] = "Size12", -- Font size used by the tablets and GUIs.
 }
-local Players = game:GetService("Players")
-local LastPlayers = {}
+local Players = game:GetService("Players") --  I go ahead and define the services I will use so that if their names change or something, it won't break.
+local LastPlayers = {} -- Used at bottom of script in the Update function.
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
 local Debris = game:GetService("Debris")
 local RunService = game:GetService("RunService")
 local Marketplace = game:GetService("MarketplaceService")
-local TabletInfo = game:GetService("Lighting")
+local TabletInfo = game:GetService("Lighting") --  The container for tablet info. (Currently uses Value instances. Changing to RemoteFunctions soon.)
 local Teams = game:GetService("Teams")
-local LastDescription = ""
 local NetworkServer = nil
 local IsServerside = pcall(function() game:GetService("NetworkServer") end)
 if IsServerside then
 	NetworkServer = game:GetService("NetworkServer")
 end
-SmartAdmin.Settings.LerpAmount = SmartAdmin.Settings.TabletMovement == "Clientside" and 0.5 or 0.3
-SmartAdmin.Functions = {}
+SmartAdmin.Settings.LerpAmount = SmartAdmin.Settings.TabletMovement == "Clientside" and 0.5 or 0.3 -- It looks better faster in local mode.
+SmartAdmin.Functions = {} -- Defining some tables.
 SmartAdmin.Tablets = {}
 SmartAdmin.Connections = {}
-TabID = 0
-if NewLocalScript and not NLS then
+TabID = 0 -- The incremental ID for tablets.
+if NewLocalScript and not NLS then -- Used to run localscripts in a player.
 	NLS = NewLocalScript
 end
 
 if not NLS then
-	NLS = function(Source,Parent)
+	NLS = function(Source,Parent) -- Used to run localscripts in a player.
 		local Scr = script.NLS:Clone()
 		Scr.Code.Value = Source
 		Scr.Parent = Parent
@@ -61,7 +60,7 @@ if not NLS then
 		return Scr
 	end
 end
-tablefind = function(tab,index,op)
+tablefind = function(tab,index,op) -- Find a value in a table.
 	local Found = nil
 	for i,v in pairs(tab) do
 		if not op then
@@ -78,21 +77,21 @@ tablefind = function(tab,index,op)
 	end
 	return Found
 end
-tonumber = function(str)
+tonumber = function(str) -- Tonumber that uses loadstring. Will make it not use loadstring later.
 	if loadstring("return "..str) and loadstring("return "..str)() and type(loadstring("return "..str)()) == "number" then
 		return loadstring("return "..str)()
 	else
 		return nil
 	end
 end
-print = function(...)
+print = function(...) -- Make print use tablets.
 	local vals = {...}
 	for i,v in pairs(vals) do
 		vals[i] = tostring(v)
 	end
-	SmartAdmin.Functions.Alert(table.concat(vals,", "),PrintPlayer or Players:GetChildren()[1],PrintPlayer ~= nil and SmartAdmin.Functions.GetColor(PrintPlayer) or BrickColor.Blue(),5)
+	SmartAdmin.Functions.CreateTablet(table.concat(vals,", "),PrintPlayer or Players:GetChildren()[1],PrintPlayer ~= nil and SmartAdmin.Functions.GetColor(PrintPlayer) or BrickColor.Blue(),5)
 end
-TableToString = function(Tab)
+TableToString = function(Tab) -- Convert table to a string.
 	local Strs = {}
 	for i,v in pairs(Tab) do
 		local ind = nil
@@ -183,6 +182,7 @@ RemoteCrashCode = [[
 		end
 	end
 ]]
+-- The local code used to update the tablets on the local side. I'm not even going to bother explaining it.
 ClientCode = [=[
 	wait(0.1)
 	script.Parent = nil
@@ -594,7 +594,7 @@ ClientCode = [=[
 		UpdateTablets()
 	end
 ]=]
-SmartAdmin.Functions.GetRank = function(Plr)
+SmartAdmin.Functions.GetRank = function(Plr) -- Get rank of a player.
 	local Plr = tostring(Plr)
 	if Plr == "PseudoPlayer" then
 		return SmartAdmin.Players[1].Rank
@@ -605,7 +605,7 @@ SmartAdmin.Functions.GetRank = function(Plr)
 		end
 	end
 end
-SmartAdmin.Functions.GetColor = function(Plr)
+SmartAdmin.Functions.GetColor = function(Plr) -- Get tablet color of a player.
 	local Plr = tostring(Plr)
 	if Plr == "PseudoPlayer" then
 		return SmartAdmin.Players[1].Color
@@ -616,7 +616,7 @@ SmartAdmin.Functions.GetColor = function(Plr)
 		end
 	end
 end
-SmartAdmin.Functions.GetPlayerData = function(Plr)
+SmartAdmin.Functions.GetPlayerData = function(Plr) -- Get all data from a player.
 	local Plr = tostring(Plr)
 	if Plr == "PseudoPlayer" then
 		return SmartAdmin.Players[1]
@@ -627,7 +627,7 @@ SmartAdmin.Functions.GetPlayerData = function(Plr)
 		end
 	end
 end
-SmartAdmin.Functions.FindPlayers = function(Str,Plr)
+SmartAdmin.Functions.FindPlayers = function(Str,Plr) -- Take chat string and find what players to execute on.
 	local Found = {}
 	for i in string.gmatch(Str:lower(), "[%w_/%s%>%<%=%-]+") do
 		if i == "me" and not tablefind(Found,Plr) then
@@ -733,7 +733,7 @@ SmartAdmin.Functions.FindPlayers = function(Str,Plr)
 	end
 	return Found
 end
-SmartAdmin.Functions.GetSeparationPos = function(Str,Seps)
+SmartAdmin.Functions.GetSeparationPos = function(Str,Seps) -- Get the last position in a string of the separation character.(See separation character in the Players table.)
 	for i = #Str,1,-1 do
 		for i2,v in pairs(Seps) do
 			if string.sub(Str:lower(),i-#v+1,i) == v then
@@ -742,7 +742,7 @@ SmartAdmin.Functions.GetSeparationPos = function(Str,Seps)
 		end
 	end
 end
-SmartAdmin.Functions.GetSeparationPos2 = function(Str,Seps)
+SmartAdmin.Functions.GetSeparationPos2 = function(Str,Seps) -- Same as above, but get the first one, not the last one.
 	for i = 1,#Str do
 		for i2,v in pairs(Seps) do
 			if string.sub(Str:lower(),i,i+#v-1) == v then
@@ -751,7 +751,7 @@ SmartAdmin.Functions.GetSeparationPos2 = function(Str,Seps)
 		end
 	end
 end
-SmartAdmin.Functions.TweenText = function(GUI,Text,IntervalTime,HangTime)
+SmartAdmin.Functions.TweenText = function(GUI,Text,IntervalTime,HangTime) -- Easy enough to understand.
 	coroutine.resume(coroutine.create(function()
 		HangTime = HangTime or 5
 		IntervalTime = IntervalTime or 0.01
@@ -771,7 +771,7 @@ SmartAdmin.Functions.TweenText = function(GUI,Text,IntervalTime,HangTime)
 		GUI.Parent:Destroy()
 	end))
 end
-SmartAdmin.Functions.GUIAlert = function(Text, People, Size, Position, TextScaled, FontSize, HangTime)
+SmartAdmin.Functions.GUIAlert = function(Text, People, Size, Position, TextScaled, FontSize, HangTime) -- Make a GUI on a player's screen with the specified size, position, and stuff.
 	for i,v in pairs(People) do
 		if v:FindFirstChild("PlayerGui") then
 			if SmartAdmin.Functions.GetRank(v) then
@@ -805,7 +805,7 @@ SmartAdmin.Functions.GUIAlert = function(Text, People, Size, Position, TextScale
 		end
 	end
 end
-SmartAdmin.Functions.Highlight = function(Model,Color,Duration)
+SmartAdmin.Functions.Highlight = function(Model,Color,Duration) -- Gives the model selection boxes, and fire, with the specified color and duration.
 	for i,v in pairs(Model:GetChildren()) do
 		if v:IsA("BasePart") then
 			local Box = Instance.new("SelectionBox",v)
@@ -821,7 +821,7 @@ SmartAdmin.Functions.Highlight = function(Model,Color,Duration)
 		SmartAdmin.Functions.Highlight(v,Color,Duration)
 	end
 end
-SmartAdmin.Functions.SelectionBox = function(Model,Color,Name)
+SmartAdmin.Functions.SelectionBox = function(Model,Color,Name) -- Gives the model selection boxes with the specified color and name.
 	local Name = Name or "AdminBox"
 	for i,v in pairs(Model:GetChildren()) do
 		if v:IsA("BasePart") then
@@ -834,7 +834,7 @@ SmartAdmin.Functions.SelectionBox = function(Model,Color,Name)
 		SmartAdmin.Functions.SelectionBox(v,Color,Name)
 	end
 end
-SmartAdmin.Functions.UnSelectionBox = function(Model,Name)
+SmartAdmin.Functions.UnSelectionBox = function(Model,Name) -- Takes away a model's selection boxes with the specified name.
 	local Name = Name or "AdminBox"
 	for i,v in pairs(Model:GetChildren()) do
 		if v:IsA("SelectionBox") and v.Name == Name then
@@ -844,7 +844,7 @@ SmartAdmin.Functions.UnSelectionBox = function(Model,Name)
 		end
 	end
 end
-SmartAdmin.Functions.Fire = function(Model,Color,Name)
+SmartAdmin.Functions.Fire = function(Model,Color,Name) -- Gives the model fire with the specified color and name.
 	local Name = Name or "AdminFire"
 	for i,v in pairs(Model:GetChildren()) do
 		if v:IsA("BasePart") then
@@ -856,7 +856,7 @@ SmartAdmin.Functions.Fire = function(Model,Color,Name)
 		SmartAdmin.Functions.Fire(v,Color,Name)
 	end
 end
-SmartAdmin.Functions.UnFire = function(Model,Name)
+SmartAdmin.Functions.UnFire = function(Model,Name) -- Takes away a model's fire with the specified name.
 	local Name = Name or "AdminFire"
 	for i,v in pairs(Model:GetChildren()) do
 		if v:IsA("Fire") and v.Name == Name then
@@ -866,7 +866,7 @@ SmartAdmin.Functions.UnFire = function(Model,Name)
 		end
 	end
 end
-SmartAdmin.Functions.Sparkles = function(Model,Color,Name)
+SmartAdmin.Functions.Sparkles = function(Model,Color,Name) -- Gives a model sparkles with the specified color and name.
 	local Name = Name or "AdminSparkles"
 	for i,v in pairs(Model:GetChildren()) do
 		if v:IsA("BasePart") then
@@ -877,7 +877,7 @@ SmartAdmin.Functions.Sparkles = function(Model,Color,Name)
 		SmartAdmin.Functions.Sparkles(v,Color,Name)
 	end
 end
-SmartAdmin.Functions.UnSparkles = function(Model,Name)
+SmartAdmin.Functions.UnSparkles = function(Model,Name) -- Takes away a model's sparkles with the specified name.
 	local Name = Name or "AdminSparkles"
 	for i,v in pairs(Model:GetChildren()) do
 		if v:IsA("Sparkles") and v.Name == Name then
@@ -887,7 +887,7 @@ SmartAdmin.Functions.UnSparkles = function(Model,Name)
 		end
 	end
 end
-SmartAdmin.Functions.UpdateColors = function(Model,Color)
+SmartAdmin.Functions.UpdateColors = function(Model,Color) -- Updates the colors of all selection boxes, lights, fire, and sparkles in a model to the specified color.
 	for i,v in pairs(Model:GetChildren()) do
 		if v.Name == "AdminFire" then
 			v.Color = BrickColor.new(Color).Color
@@ -901,8 +901,8 @@ SmartAdmin.Functions.UpdateColors = function(Model,Color)
 		SmartAdmin.Functions.UpdateColors(v,Color)
 	end
 end
-SmartAdmin.Functions.UpdateAlerts = function(Player)
-	if SmartAdmin.Settings.TabletMovement == "Serverside" then
+SmartAdmin.Functions.UpdateTablets = function(Player) -- Update the tablets for the specified player.
+	if SmartAdmin.Settings.TabletMovement == "Serverside" then -- If the tablets are set to be updated on the server. (Not going to explain the movement process.)
 		local WorkedBro,ErrorBro = ypcall(function()
 			local Tablets = {}
 			local HasDismiss = false
@@ -1026,7 +1026,7 @@ SmartAdmin.Functions.UpdateAlerts = function(Player)
 				end
 			end
 		end)
-	else
+	else -- Update the tablet info.(Need to convert to use RemoteFunctions.)
 		local Plyrs = TabletInfo:FindFirstChild("Players")
 		if Plyrs == nil then
 			Plyrs = Instance.new("NumberValue",TabletInfo)
@@ -1086,21 +1086,21 @@ SmartAdmin.Functions.UpdateAlerts = function(Player)
 		end
 	end
 end
-SmartAdmin.Functions.GetPlayer = function(Name)
+SmartAdmin.Functions.GetPlayer = function(Name) -- Get player with the specified name.
 	for i,v in pairs(Players:GetPlayers()) do
 		if v.Name == Name then
 			return v
 		end
 	end
 end
-SmartAdmin.Functions.GetHumanoid = function(Mod)
+SmartAdmin.Functions.GetHumanoid = function(Mod) -- Get the humanoid in the specified model.
 	for i,v in pairs(Mod:GetChildren()) do
 		if v:IsA("Humanoid") then
 			return v
 		end
 	end
 end
-SmartAdmin.Functions.LoadPlayerData = function(Player)
+SmartAdmin.Functions.LoadPlayerData = function(Player) -- Get the player data from a player that is stored in data persistence.
 	Player:WaitForDataReady()
 	if Player:LoadString("SmartAdminDataPersistencePlayerData") ~= "" and loadstring("return "..Player:LoadString("SmartAdminDataPersistencePlayerData")) ~= nil then
 		local Tab = loadstring("return "..Player:LoadString("SmartAdminDataPersistencePlayerData"))()
@@ -1115,7 +1115,7 @@ SmartAdmin.Functions.LoadPlayerData = function(Player)
 		end
 	end
 end
-SmartAdmin.Functions.SavePlayerData = function(Player)
+SmartAdmin.Functions.SavePlayerData = function(Player) -- Save the player data of a player in data persistence.
 	Player:WaitForDataReady()
 	local Tab = {}
 	for i,v in pairs(SmartAdmin.Functions.GetPlayerData(Player)) do
@@ -1128,7 +1128,7 @@ SmartAdmin.Functions.SavePlayerData = function(Player)
 		Player:SaveString("SmartAdminDataPersistencePlayerData",Str)
 	end
 end
-SmartAdmin.Functions.ParseString = function(String,SandboxCode,PrintCode)
+SmartAdmin.Functions.ParseString = function(String,SandboxCode,PrintCode) -- Get stuffs. I need to redo this function to make it more secure.
 	SandboxCode = SandboxCode or ""
 	PrintCode = PrintCode or ""
 	local New = ""
@@ -1172,7 +1172,7 @@ SmartAdmin.Functions.ParseString = function(String,SandboxCode,PrintCode)
 	end
 	return New
 end
-SmartAdmin.Functions.ParseSingleString = function(String,SandboxCode,PrintCode)
+SmartAdmin.Functions.ParseSingleString = function(String,SandboxCode,PrintCode) -- Same as above function, just parse once.
 	SandboxCode = SandboxCode or ""
 	PrintCode = PrintCode or ""
 	local Func = loadstring(SandboxCode..PrintCode.."return "..String)
@@ -1188,7 +1188,7 @@ SmartAdmin.Functions.ParseSingleString = function(String,SandboxCode,PrintCode)
 		return String
 	end
 end
-SmartAdmin.Functions.DismissTablets = function(Player,Wait)
+SmartAdmin.Functions.DismissTablets = function(Player,Wait) -- Remove all tablets from a player. Also has a cool shrink effect. :D
 	local Player = tostring(Player)
 	for i,v in pairs(SmartAdmin.Tablets) do
 		if v[3] == Player then
@@ -1232,7 +1232,7 @@ SmartAdmin.Functions.DismissTablets = function(Player,Wait)
 		end
 	end
 end
-SmartAdmin.Functions.Alert = function(Text,Player,Color,Duration,Func,Extras)
+SmartAdmin.Functions.CreateTablet = function(Text,Player,Color,Duration,Func,Extras) -- Creates a tablet with specified stuff.
 	if Text == "Dismiss" and Func == 2 then
 		for i,v in pairs(SmartAdmin.Tablets) do
 			if v[3] == Player.Name and v[4] == "Dismiss" and v[5] == 2 then
@@ -1358,14 +1358,14 @@ SmartAdmin.Functions.Alert = function(Text,Player,Color,Duration,Func,Extras)
 							end
 						until num == 0
 					end
-					SmartAdmin.Functions.UpdateAlerts(Player)
-					SmartAdmin.Functions.Alert("Info For "..Extras.Player.Name,Player,SmartAdmin.Functions.GetColor(Extras.Player),nil,4)
-					SmartAdmin.Functions.Alert("Rank "..SmartAdmin.Functions.GetRank(Extras.Player).."("..SmartAdmin.Ranks[SmartAdmin.Functions.GetRank(Extras.Player)]..")",Player,SmartAdmin.Functions.GetColor(Extras.Player))
-					SmartAdmin.Functions.Alert("Account Age: "..math.floor(Extras.Player.AccountAge/365).." Years and "..(Extras.Player.AccountAge/365-math.floor(Extras.Player.AccountAge/365))*365 .." Days",Player,SmartAdmin.Functions.GetColor(Extras.Player))
-					SmartAdmin.Functions.Alert("User ID: "..Extras.Player.userId,Player,SmartAdmin.Functions.GetColor(Extras.Player))
-					SmartAdmin.Functions.Alert("Membership Type: "..string.sub(tostring(Extras.Player.MembershipType),21),Player,SmartAdmin.Functions.GetColor(Extras.Player))
-					SmartAdmin.Functions.Alert("Is Game Owner: "..tostring(Extras.Player.userId==game.CreatorId),Player,SmartAdmin.Functions.GetColor(Extras.Player))
-					SmartAdmin.Functions.Alert("Dismiss",Player,BrickColor.Red(),nil,2)
+					SmartAdmin.Functions.UpdateTablets(Player)
+					SmartAdmin.Functions.CreateTablet("Info For "..Extras.Player.Name,Player,SmartAdmin.Functions.GetColor(Extras.Player),nil,4)
+					SmartAdmin.Functions.CreateTablet("Rank "..SmartAdmin.Functions.GetRank(Extras.Player).."("..SmartAdmin.Ranks[SmartAdmin.Functions.GetRank(Extras.Player)]..")",Player,SmartAdmin.Functions.GetColor(Extras.Player))
+					SmartAdmin.Functions.CreateTablet("Account Age: "..math.floor(Extras.Player.AccountAge/365).." Years and "..(Extras.Player.AccountAge/365-math.floor(Extras.Player.AccountAge/365))*365 .." Days",Player,SmartAdmin.Functions.GetColor(Extras.Player))
+					SmartAdmin.Functions.CreateTablet("User ID: "..Extras.Player.userId,Player,SmartAdmin.Functions.GetColor(Extras.Player))
+					SmartAdmin.Functions.CreateTablet("Membership Type: "..string.sub(tostring(Extras.Player.MembershipType),21),Player,SmartAdmin.Functions.GetColor(Extras.Player))
+					SmartAdmin.Functions.CreateTablet("Is Game Owner: "..tostring(Extras.Player.userId==game.CreatorId),Player,SmartAdmin.Functions.GetColor(Extras.Player))
+					SmartAdmin.Functions.CreateTablet("Dismiss",Player,BrickColor.Red(),nil,2)
 				elseif Func == 5 then -- Show command info.
 					if SmartAdmin.Settings.TabletMovement == "Serverside" then
 						SmartAdmin.Functions.DismissTablets(Player,true)
@@ -1380,17 +1380,17 @@ SmartAdmin.Functions.Alert = function(Text,Player,Color,Duration,Func,Extras)
 							end
 						until num == 0
 					end
-					SmartAdmin.Functions.UpdateAlerts(Player)
+					SmartAdmin.Functions.UpdateTablets(Player)
 					local Aliases = "None"
 					if #Extras.Command.Aliases > 0 then
 						Aliases = table.concat(Extras.Command.Aliases,", ")
 					end
-					SmartAdmin.Functions.Alert("Info For "..Extras.Command.Name,Player,SmartAdmin.Functions.GetColor(Player),nil,4)
-					SmartAdmin.Functions.Alert("Required Rank: "..Extras.Command.Rank.."("..SmartAdmin.Ranks[Extras.Command.Rank]..")",Player,SmartAdmin.Functions.GetColor(Player))
-					SmartAdmin.Functions.Alert("Aliases: "..Aliases,Player,SmartAdmin.Functions.GetColor(Player))
-					SmartAdmin.Functions.Alert("Info: "..Extras.Command.Info,Player,SmartAdmin.Functions.GetColor(Player))
-					SmartAdmin.Functions.Alert("Example: "..Extras.Command.Example,Player,SmartAdmin.Functions.GetColor(Player))
-					SmartAdmin.Functions.Alert("Dismiss",Player,BrickColor.Red(),nil,2)
+					SmartAdmin.Functions.CreateTablet("Info For "..Extras.Command.Name,Player,SmartAdmin.Functions.GetColor(Player),nil,4)
+					SmartAdmin.Functions.CreateTablet("Required Rank: "..Extras.Command.Rank.."("..SmartAdmin.Ranks[Extras.Command.Rank]..")",Player,SmartAdmin.Functions.GetColor(Player))
+					SmartAdmin.Functions.CreateTablet("Aliases: "..Aliases,Player,SmartAdmin.Functions.GetColor(Player))
+					SmartAdmin.Functions.CreateTablet("Info: "..Extras.Command.Info,Player,SmartAdmin.Functions.GetColor(Player))
+					SmartAdmin.Functions.CreateTablet("Example: "..Extras.Command.Example,Player,SmartAdmin.Functions.GetColor(Player))
+					SmartAdmin.Functions.CreateTablet("Dismiss",Player,BrickColor.Red(),nil,2)
 				elseif Func == 6 then -- Show players of rank.
 					if SmartAdmin.Settings.TabletMovement == "Serverside" then
 						SmartAdmin.Functions.DismissTablets(Player,true)
@@ -1405,19 +1405,19 @@ SmartAdmin.Functions.Alert = function(Text,Player,Color,Duration,Func,Extras)
 							end
 						until num == 0
 					end
-					SmartAdmin.Functions.UpdateAlerts(Player)
+					SmartAdmin.Functions.UpdateTablets(Player)
 					local Num = 0
 					for i,v in pairs(SmartAdmin.Players) do
 						if v.Rank == Extras.Rank then
 							Num = Num+1
-							SmartAdmin.Functions.Alert(v.Name,Player,v.Color,nil,3,{["Player"]=SmartAdmin.Functions.GetPlayer(v.Name)})
+							SmartAdmin.Functions.CreateTablet(v.Name,Player,v.Color,nil,3,{["Player"]=SmartAdmin.Functions.GetPlayer(v.Name)})
 						end
 					end
 					if Num > 0 then
-						SmartAdmin.Functions.Alert("Rank "..Extras.Rank.." Players",Player,SmartAdmin.Functions.GetColor(Player),nil,4)
-						SmartAdmin.Functions.Alert("Dismiss",Player,BrickColor.Red(),nil,2)
+						SmartAdmin.Functions.CreateTablet("Rank "..Extras.Rank.." Players",Player,SmartAdmin.Functions.GetColor(Player),nil,4)
+						SmartAdmin.Functions.CreateTablet("Dismiss",Player,BrickColor.Red(),nil,2)
 					else
-						SmartAdmin.Functions.Alert("There currently aren't any rank "..Extras.Rank.." players.",Player,SmartAdmin.Functions.GetColor(Player),5,1)
+						SmartAdmin.Functions.CreateTablet("There currently aren't any rank "..Extras.Rank.." players.",Player,SmartAdmin.Functions.GetColor(Player),5,1)
 					end
 				elseif Func == 7 then -- Run command on player.
 					if SmartAdmin.Settings.TabletMovement == "Serverside" then
@@ -1433,12 +1433,12 @@ SmartAdmin.Functions.Alert = function(Text,Player,Color,Duration,Func,Extras)
 							end
 						until num == 0
 					end
-					SmartAdmin.Functions.UpdateAlerts(Player)
+					SmartAdmin.Functions.UpdateTablets(Player)
 					local Worked,Error = ypcall(function()
 						SmartAdmin.Chatted(SmartAdmin.Functions.GetPlayerData(Player).SeparationKeys[1]..Extras.Command.Name..SmartAdmin.Functions.GetPlayerData(Player).SeparationKeys[1]..Extras.Player.Name,Player)
 					end)
 					if not Worked then
-						SmartAdmin.Functions.Alert("Error || "..Error,type(Player) == "userdata" and Player or Players:GetPlayers()[1],BrickColor.Red(),5,1)
+						SmartAdmin.Functions.CreateTablet("Error || "..Error,type(Player) == "userdata" and Player or Players:GetPlayers()[1],BrickColor.Red(),5,1)
 					end
 				elseif Func == 8 then -- Crash/kick player.
 					if SmartAdmin.Settings.TabletMovement == "Serverside" then
@@ -1454,19 +1454,19 @@ SmartAdmin.Functions.Alert = function(Text,Player,Color,Duration,Func,Extras)
 							end
 						until num == 0
 					end
-					SmartAdmin.Functions.UpdateAlerts(Player)
+					SmartAdmin.Functions.UpdateTablets(Player)
 					if Player.Name == Extras.Player.Name then
-						SmartAdmin.Functions.Alert("Error || You cannot crash yourself!",Player,BrickColor.Red(),5,1)
+						SmartAdmin.Functions.CreateTablet("Error || You cannot crash yourself!",Player,BrickColor.Red(),5,1)
 					elseif SmartAdmin.Functions.GetRank(Player) < Extras.Player.Rank then
-						SmartAdmin.Functions.Alert("Error || "..Extras.Player.Name.." outranks you!",Player,BrickColor.Red(),5,1)
+						SmartAdmin.Functions.CreateTablet("Error || "..Extras.Player.Name.." outranks you!",Player,BrickColor.Red(),5,1)
 					else
 						local v = Instance.new("StringValue",Lighting)
 						v.Name = Extras.Player.Name.."CrashThem"
 						Debris:AddItem(v,10)
-						SmartAdmin.Functions.Alert("You crashed "..Extras.Player.Name..".",Player,SmartAdmin.Functions.GetColor(Player),5,1)
+						SmartAdmin.Functions.CreateTablet("You crashed "..Extras.Player.Name..".",Player,SmartAdmin.Functions.GetColor(Player),5,1)
 					end
 					if not Worked then
-						SmartAdmin.Functions.Alert("Error || "..Error,type(Player) == "userdata" and Player or Players:GetPlayers()[1],BrickColor.Red(),5,1)
+						SmartAdmin.Functions.CreateTablet("Error || "..Error,type(Player) == "userdata" and Player or Players:GetPlayers()[1],BrickColor.Red(),5,1)
 					end
 				end
 			end
@@ -1478,7 +1478,7 @@ SmartAdmin.Functions.Alert = function(Text,Player,Color,Duration,Func,Extras)
 	end
 	return Part
 end
-SmartAdmin.Commands = {
+SmartAdmin.Commands = { -- The table of commands.
 	{["Name"] = "dismiss", ["Example"] = "/dismiss/", ["Info"] = "Dismisses(removes) your tablets.", ["Rank"] = 0, ["Duplicate"] = true, ["Execute"] = function(Plr, Msg, Rk)
 		SmartAdmin.Functions.DismissTablets(Plr)
 	end, ["Aliases"] = {"dm"}, ["Menu"] = false},
@@ -1487,11 +1487,11 @@ SmartAdmin.Commands = {
 		if End:lower() == "players" then
 			for i,v in pairs(SmartAdmin.Players) do
 				if SmartAdmin.Functions.GetPlayer(v.Name) then
-					SmartAdmin.Functions.Alert(v.Name.." || Rank "..v.Rank.."("..SmartAdmin.Ranks[v.Rank]..")",Plr,v.Color,nil,3,{["Player"]=SmartAdmin.Functions.GetPlayer(v.Name)})
+					SmartAdmin.Functions.CreateTablet(v.Name.." || Rank "..v.Rank.."("..SmartAdmin.Ranks[v.Rank]..")",Plr,v.Color,nil,3,{["Player"]=SmartAdmin.Functions.GetPlayer(v.Name)})
 				end
 			end
-			SmartAdmin.Functions.Alert("Players",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
-			SmartAdmin.Functions.Alert("Dismiss",Plr,BrickColor.Red(),nil,2)
+			SmartAdmin.Functions.CreateTablet("Players",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
+			SmartAdmin.Functions.CreateTablet("Dismiss",Plr,BrickColor.Red(),nil,2)
 		elseif End:lower() == "nil" then
 			local Num = 0
 			for i,v in pairs(NetworkServer:GetChildren()) do
@@ -1499,139 +1499,139 @@ SmartAdmin.Commands = {
 					Num = Num+1
 					if SmartAdmin.Functions.GetPlayerData(v:GetPlayer()) then
 						v = SmartAdmin.Functions.GetPlayerData(v:GetPlayer())
-						SmartAdmin.Functions.Alert(v.Name.." || Rank "..v.Rank.."("..SmartAdmin.Ranks[v.Rank]..")",Plr,v.Color,nil,8,{["Player"]=v})
+						SmartAdmin.Functions.CreateTablet(v.Name.." || Rank "..v.Rank.."("..SmartAdmin.Ranks[v.Rank]..")",Plr,v.Color,nil,8,{["Player"]=v})
 					else
-						SmartAdmin.Functions.Alert(v:GetPlayer().Name.." || Rank Unknown || Unable to Crash",Plr,SmartAdmin.Settings.Colors[math.random(1,#SmartAdmin.Settings.Colors)],nil,0)
+						SmartAdmin.Functions.CreateTablet(v:GetPlayer().Name.." || Rank Unknown || Unable to Crash",Plr,SmartAdmin.Settings.Colors[math.random(1,#SmartAdmin.Settings.Colors)],nil,0)
 					end
 				end
 			end
 			if Num > 0 then
-				SmartAdmin.Functions.Alert("Nil Players(Click to Crash)",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
-				SmartAdmin.Functions.Alert("Dismiss",Plr,BrickColor.Red(),nil,2)
+				SmartAdmin.Functions.CreateTablet("Nil Players(Click to Crash)",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
+				SmartAdmin.Functions.CreateTablet("Dismiss",Plr,BrickColor.Red(),nil,2)
 			else
-				SmartAdmin.Functions.Alert("There currently aren't any nil players.",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
+				SmartAdmin.Functions.CreateTablet("There currently aren't any nil players.",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
 			end
 		elseif End:lower():sub(1,5) == "ranks" then
 			for i = -2,7 do
 				local v = SmartAdmin.Ranks[i]
-				SmartAdmin.Functions.Alert("Rank "..i.."("..v..")",Plr,SmartAdmin.Functions.GetColor(Plr),nil,6,{["Rank"]=i})
+				SmartAdmin.Functions.CreateTablet("Rank "..i.."("..v..")",Plr,SmartAdmin.Functions.GetColor(Plr),nil,6,{["Rank"]=i})
 			end
-			SmartAdmin.Functions.Alert("Ranks",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
-			SmartAdmin.Functions.Alert("Dismiss",Plr,BrickColor.Red(),nil,2)
+			SmartAdmin.Functions.CreateTablet("Ranks",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
+			SmartAdmin.Functions.CreateTablet("Dismiss",Plr,BrickColor.Red(),nil,2)
 		elseif End:lower():sub(1,6) == "rank==" then
 			if tonumber(End:sub(7)) ~= nil then
 				if tonumber(End:sub(7)) > 7 then
-					SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 				elseif tonumber(End:sub(7)) < -2 then
-					SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 				end
 				local Num = 0
 				for i,v in pairs(SmartAdmin.Players) do
 					if v.Rank == tonumber(End:sub(7)) then
 						Num = Num+1
-						SmartAdmin.Functions.Alert(v.Name,Plr,v.Color,nil,SmartAdmin.Functions.GetPlayer(v.Name) and 3 or 0,{["Player"]=SmartAdmin.Functions.GetPlayer(v.Name)})
+						SmartAdmin.Functions.CreateTablet(v.Name,Plr,v.Color,nil,SmartAdmin.Functions.GetPlayer(v.Name) and 3 or 0,{["Player"]=SmartAdmin.Functions.GetPlayer(v.Name)})
 					end
 				end
 				if Num > 0 then
-					SmartAdmin.Functions.Alert("Rank "..tonumber(End:sub(7)).." Players",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
-					SmartAdmin.Functions.Alert("Dismiss",Plr,BrickColor.Red(),nil,2)
+					SmartAdmin.Functions.CreateTablet("Rank "..tonumber(End:sub(7)).." Players",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
+					SmartAdmin.Functions.CreateTablet("Dismiss",Plr,BrickColor.Red(),nil,2)
 				else
-					SmartAdmin.Functions.Alert("There currently aren't any rank "..tonumber(End:sub(7)).." players.",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
+					SmartAdmin.Functions.CreateTablet("There currently aren't any rank "..tonumber(End:sub(7)).." players.",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 			end
 		elseif End:lower():sub(1,6) == "rank<=" then
 			if tonumber(End:sub(7)) ~= nil then
 				if tonumber(End:sub(7)) > 7 then
-					SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 				elseif tonumber(End:sub(7)) < -2 then
-					SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 				end
 				local Num = 0
 				for i,v in pairs(SmartAdmin.Players) do
 					if v.Rank <= tonumber(End:sub(7)) then
 						Num = Num+1
-						SmartAdmin.Functions.Alert(v.Name,Plr,v.Color,nil,SmartAdmin.Functions.GetPlayer(v.Name) and 3 or 0,{["Player"]=SmartAdmin.Functions.GetPlayer(v.Name)})
+						SmartAdmin.Functions.CreateTablet(v.Name,Plr,v.Color,nil,SmartAdmin.Functions.GetPlayer(v.Name) and 3 or 0,{["Player"]=SmartAdmin.Functions.GetPlayer(v.Name)})
 					end
 				end
 				if Num > 0 then
-					SmartAdmin.Functions.Alert("Rank "..tonumber(End:sub(7)).." and Down Players",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
-					SmartAdmin.Functions.Alert("Dismiss",Plr,BrickColor.Red(),nil,2)
+					SmartAdmin.Functions.CreateTablet("Rank "..tonumber(End:sub(7)).." and Down Players",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
+					SmartAdmin.Functions.CreateTablet("Dismiss",Plr,BrickColor.Red(),nil,2)
 				else
-					SmartAdmin.Functions.Alert("There currently aren't any players rank "..tonumber(End:sub(7)).." and down.",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
+					SmartAdmin.Functions.CreateTablet("There currently aren't any players rank "..tonumber(End:sub(7)).." and down.",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 			end
 		elseif End:lower():sub(1,6) == "rank>=" then
 			if tonumber(End:sub(7)) ~= nil then
 				if tonumber(End:sub(7)) > 7 then
-					SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 				elseif tonumber(End:sub(7)) < -2 then
-					SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 				end
 				local Num = 0
 				for i,v in pairs(SmartAdmin.Players) do
 					if v.Rank >= tonumber(End:sub(7)) then
 						Num = Num+1
-						SmartAdmin.Functions.Alert(v.Name,Plr,v.Color,nil,SmartAdmin.Functions.GetPlayer(v.Name) and 3 or 0,{["Player"]=SmartAdmin.Functions.GetPlayer(v.Name)})
+						SmartAdmin.Functions.CreateTablet(v.Name,Plr,v.Color,nil,SmartAdmin.Functions.GetPlayer(v.Name) and 3 or 0,{["Player"]=SmartAdmin.Functions.GetPlayer(v.Name)})
 					end
 				end
 				if Num > 0 then
-					SmartAdmin.Functions.Alert("Rank "..tonumber(End:sub(7)).." and Up Players",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
-					SmartAdmin.Functions.Alert("Dismiss",Plr,BrickColor.Red(),nil,2)
+					SmartAdmin.Functions.CreateTablet("Rank "..tonumber(End:sub(7)).." and Up Players",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
+					SmartAdmin.Functions.CreateTablet("Dismiss",Plr,BrickColor.Red(),nil,2)
 				else
-					SmartAdmin.Functions.Alert("There currently aren't any players rank "..tonumber(End:sub(7)).." and up.",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
+					SmartAdmin.Functions.CreateTablet("There currently aren't any players rank "..tonumber(End:sub(7)).." and up.",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 			end
 		elseif End:lower():sub(1,5) == "rank<" then
 			if tonumber(End:sub(6)) ~= nil then
 				if tonumber(End:sub(6)) > 7 then
-					SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 				elseif tonumber(End:sub(6)) < -2 then
-					SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 				end
 				local Num = 0
 				for i,v in pairs(SmartAdmin.Players) do
 					if v.Rank < tonumber(End:sub(6)) then
 						Num = Num+1
-						SmartAdmin.Functions.Alert(v.Name,Plr,v.Color,nil,SmartAdmin.Functions.GetPlayer(v.Name) and 3 or 0,{["Player"]=SmartAdmin.Functions.GetPlayer(v.Name)})
+						SmartAdmin.Functions.CreateTablet(v.Name,Plr,v.Color,nil,SmartAdmin.Functions.GetPlayer(v.Name) and 3 or 0,{["Player"]=SmartAdmin.Functions.GetPlayer(v.Name)})
 					end
 				end
 				if Num > 0 then
-					SmartAdmin.Functions.Alert("Rank "..tonumber(End:sub(6))-1 .." and Down Players",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
-					SmartAdmin.Functions.Alert("Dismiss",Plr,BrickColor.Red(),nil,2)
+					SmartAdmin.Functions.CreateTablet("Rank "..tonumber(End:sub(6))-1 .." and Down Players",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
+					SmartAdmin.Functions.CreateTablet("Dismiss",Plr,BrickColor.Red(),nil,2)
 				else
-					SmartAdmin.Functions.Alert("There currently aren't any players with a rank lower than "..tonumber(End:sub(6))..".",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
+					SmartAdmin.Functions.CreateTablet("There currently aren't any players with a rank lower than "..tonumber(End:sub(6))..".",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 			end
 		elseif End:lower():sub(1,5) == "rank>" then
 			if tonumber(End:sub(6)) ~= nil then
 				if tonumber(End:sub(6)) > 7 then
-					SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 				elseif tonumber(End:sub(6)) < -2 then
-					SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 				end
 				local Num = 0
 				for i,v in pairs(SmartAdmin.Players) do
 					if v.Rank > tonumber(End:sub(6)) then
 						Num = Num+1
-						SmartAdmin.Functions.Alert(v.Name,Plr,v.Color,nil,SmartAdmin.Functions.GetPlayer(v.Name) and 3 or 0,{["Player"]=SmartAdmin.Functions.GetPlayer(v.Name)})
+						SmartAdmin.Functions.CreateTablet(v.Name,Plr,v.Color,nil,SmartAdmin.Functions.GetPlayer(v.Name) and 3 or 0,{["Player"]=SmartAdmin.Functions.GetPlayer(v.Name)})
 					end
 				end
 				if Num > 0 then
-					SmartAdmin.Functions.Alert("Rank "..tonumber(End:sub(6))+1 .." and Up Players",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
-					SmartAdmin.Functions.Alert("Dismiss",Plr,BrickColor.Red(),nil,2)
+					SmartAdmin.Functions.CreateTablet("Rank "..tonumber(End:sub(6))+1 .." and Up Players",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
+					SmartAdmin.Functions.CreateTablet("Dismiss",Plr,BrickColor.Red(),nil,2)
 				else
-					SmartAdmin.Functions.Alert("There currently aren't any players with a rank higher than "..tonumber(End:sub(6))..".",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
+					SmartAdmin.Functions.CreateTablet("There currently aren't any players with a rank higher than "..tonumber(End:sub(6))..".",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || Invalid rank number.",Plr,BrickColor.Red(),5,1)
 			end
 		else
 			local Found = false
@@ -1641,14 +1641,14 @@ SmartAdmin.Commands = {
 					for i2,v2 in pairs(SmartAdmin.Players) do
 						if v2.Rank == i then
 							Num = Num+1
-							SmartAdmin.Functions.Alert(v2.Name,Plr,v2.Color,nil,SmartAdmin.Functions.GetPlayer(v.Name) and 3 or 0,{["Player"]=SmartAdmin.Functions.GetPlayer(v2.Name)})
+							SmartAdmin.Functions.CreateTablet(v2.Name,Plr,v2.Color,nil,SmartAdmin.Functions.GetPlayer(v.Name) and 3 or 0,{["Player"]=SmartAdmin.Functions.GetPlayer(v2.Name)})
 						end
 					end
 					if Num > 0 then
-						SmartAdmin.Functions.Alert("Rank "..i .."("..v..") Players",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
-						SmartAdmin.Functions.Alert("Dismiss",Plr,BrickColor.Red(),nil,2)
+						SmartAdmin.Functions.CreateTablet("Rank "..i .."("..v..") Players",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
+						SmartAdmin.Functions.CreateTablet("Dismiss",Plr,BrickColor.Red(),nil,2)
 					else
-						SmartAdmin.Functions.Alert("There currently aren't any rank "..i.."("..v..") players.",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
+						SmartAdmin.Functions.CreateTablet("There currently aren't any rank "..i.."("..v..") players.",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
 					end
 					Found = true
 					break
@@ -1657,10 +1657,10 @@ SmartAdmin.Commands = {
 			if Found then return end
 			local Str = SmartAdmin.Functions.ParseSingleString(End,"local ypcall = nil; local xpcall = nil; local getfenv = nil; local setfenv = nil; local pcall = nil; local coroutine = nil; local loadstring = nil; local Spawn = nil;")
 			if End ~= Str then
-				SmartAdmin.Functions.Alert(Str,Plr,SmartAdmin.Functions.GetColor(Plr),nil,1)
+				SmartAdmin.Functions.CreateTablet(Str,Plr,SmartAdmin.Functions.GetColor(Plr),nil,1)
 			else
 				Str = SmartAdmin.Functions.ParseString(End,"local ypcall = nil; local xpcall = nil; local getfenv = nil; local setfenv = nil; local pcall = nil; local coroutine = nil; local loadstring = nil; local Spawn = nil;")
-				SmartAdmin.Functions.Alert(Str,Plr,SmartAdmin.Functions.GetColor(Plr),nil,1)
+				SmartAdmin.Functions.CreateTablet(Str,Plr,SmartAdmin.Functions.GetColor(Plr),nil,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = false},
@@ -1669,13 +1669,13 @@ SmartAdmin.Commands = {
 		if #Plrs > 0 then
 			for i,v in pairs(Plrs) do
 				pcall(function()
-					SmartAdmin.Functions.Alert("Info For "..v.Name,Plr,SmartAdmin.Functions.GetColor(v),nil,4)
-					SmartAdmin.Functions.Alert("Rank "..SmartAdmin.Functions.GetRank(v).."("..SmartAdmin.Ranks[SmartAdmin.Functions.GetRank(v)]..")",Plr,SmartAdmin.Functions.GetColor(v))
-					SmartAdmin.Functions.Alert("Account Age: "..math.floor(v.AccountAge/365).." Years and "..(v.AccountAge/365-math.floor(v.AccountAge/365))*365 .." Days",Plr,SmartAdmin.Functions.GetColor(v))
-					SmartAdmin.Functions.Alert("User ID: "..v.userId,Plr,SmartAdmin.Functions.GetColor(v))
-					SmartAdmin.Functions.Alert("Membership Type: "..string.sub(tostring(v.MembershipType),21),Plr,SmartAdmin.Functions.GetColor(v))
-					SmartAdmin.Functions.Alert("Is Game Owner: "..tostring(v.userId==game.CreatorId),Plr,SmartAdmin.Functions.GetColor(v))
-					SmartAdmin.Functions.Alert("Dismiss",Plr,BrickColor.Red(),nil,2)
+					SmartAdmin.Functions.CreateTablet("Info For "..v.Name,Plr,SmartAdmin.Functions.GetColor(v),nil,4)
+					SmartAdmin.Functions.CreateTablet("Rank "..SmartAdmin.Functions.GetRank(v).."("..SmartAdmin.Ranks[SmartAdmin.Functions.GetRank(v)]..")",Plr,SmartAdmin.Functions.GetColor(v))
+					SmartAdmin.Functions.CreateTablet("Account Age: "..math.floor(v.AccountAge/365).." Years and "..(v.AccountAge/365-math.floor(v.AccountAge/365))*365 .." Days",Plr,SmartAdmin.Functions.GetColor(v))
+					SmartAdmin.Functions.CreateTablet("User ID: "..v.userId,Plr,SmartAdmin.Functions.GetColor(v))
+					SmartAdmin.Functions.CreateTablet("Membership Type: "..string.sub(tostring(v.MembershipType),21),Plr,SmartAdmin.Functions.GetColor(v))
+					SmartAdmin.Functions.CreateTablet("Is Game Owner: "..tostring(v.userId==game.CreatorId),Plr,SmartAdmin.Functions.GetColor(v))
+					SmartAdmin.Functions.CreateTablet("Dismiss",Plr,BrickColor.Red(),nil,2)
 				end)
 			end
 		else
@@ -1692,12 +1692,12 @@ SmartAdmin.Commands = {
 					if #v.Aliases > 0 then
 						Aliases = table.concat(v.Aliases,", ")
 					end
-					SmartAdmin.Functions.Alert("Info For "..v.Name,Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
-					SmartAdmin.Functions.Alert("Required Rank: "..v.Rank.."("..SmartAdmin.Ranks[v.Rank]..")",Plr,SmartAdmin.Functions.GetColor(Plr))
-					SmartAdmin.Functions.Alert("Aliases: "..Aliases,Plr,SmartAdmin.Functions.GetColor(Plr))
-					SmartAdmin.Functions.Alert("Info: "..v.Info,Plr,SmartAdmin.Functions.GetColor(Plr))
-					SmartAdmin.Functions.Alert("Example: "..v.Example,Plr,SmartAdmin.Functions.GetColor(Plr))
-					SmartAdmin.Functions.Alert("Dismiss",Plr,BrickColor.Red(),nil,2)
+					SmartAdmin.Functions.CreateTablet("Info For "..v.Name,Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
+					SmartAdmin.Functions.CreateTablet("Required Rank: "..v.Rank.."("..SmartAdmin.Ranks[v.Rank]..")",Plr,SmartAdmin.Functions.GetColor(Plr))
+					SmartAdmin.Functions.CreateTablet("Aliases: "..Aliases,Plr,SmartAdmin.Functions.GetColor(Plr))
+					SmartAdmin.Functions.CreateTablet("Info: "..v.Info,Plr,SmartAdmin.Functions.GetColor(Plr))
+					SmartAdmin.Functions.CreateTablet("Example: "..v.Example,Plr,SmartAdmin.Functions.GetColor(Plr))
+					SmartAdmin.Functions.CreateTablet("Dismiss",Plr,BrickColor.Red(),nil,2)
 					break
 				end
 			end
@@ -1708,7 +1708,7 @@ SmartAdmin.Commands = {
 		if #Msg > #CmdName+1 then
 			Rank = tonumber(Msg:sub(#CmdName+2))
 			if Rank ~= nil and Rank > Rk then
-				SmartAdmin.Functions.Alert("Error || You cannot see commands that are higher than your rank.",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || You cannot see commands that are higher than your rank.",Plr,BrickColor.Red(),5,1)
 				return
 			end
 		end
@@ -1719,18 +1719,18 @@ SmartAdmin.Commands = {
 			end
 			if ((Rank == nil and v.Rank <= Rk) or (Rank == v.Rank)) and not v.Duplicate then
 				Count = Count+1
-				SmartAdmin.Functions.Alert(v.Name,Plr,SmartAdmin.Functions.GetColor(Plr),nil,5,{["Command"]=v})
+				SmartAdmin.Functions.CreateTablet(v.Name,Plr,SmartAdmin.Functions.GetColor(Plr),nil,5,{["Command"]=v})
 			end
 		end
 		if Count == 0 then
-			SmartAdmin.Functions.Alert("There are currently no commands for this rank.",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
+			SmartAdmin.Functions.CreateTablet("There are currently no commands for this rank.",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
 		else
 			if Rank == nil then
-				SmartAdmin.Functions.Alert("Rank "..Rk.."("..SmartAdmin.Ranks[Rk]..") and Lower Commands",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
+				SmartAdmin.Functions.CreateTablet("Rank "..Rk.."("..SmartAdmin.Ranks[Rk]..") and Lower Commands",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
 			else
-				SmartAdmin.Functions.Alert("Rank "..Rank.."("..SmartAdmin.Ranks[Rank]..") Commands",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
+				SmartAdmin.Functions.CreateTablet("Rank "..Rank.."("..SmartAdmin.Ranks[Rank]..") Commands",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
 			end
-			SmartAdmin.Functions.Alert("Dismiss",Plr,BrickColor.Red(),nil,2)
+			SmartAdmin.Functions.CreateTablet("Dismiss",Plr,BrickColor.Red(),nil,2)
 		end
 	end, ["Aliases"] = {"cmds"},["Menu"] = false},
 	{["Name"] = "forcefield", ["Example"] = "/forcefield/player", ["Info"] = "Gives a player a forcefield.", ["Rank"] = 1, ["Execute"] = function(Plr, Msg, Rk, CmdName)
@@ -1742,10 +1742,10 @@ SmartAdmin.Commands = {
 						Instance.new("ForceField",v.Character).Name = "AdminFF"
 					end)
 				elseif v.Character ~= nil and v.Character:FindFirstChild("AdminFF") ~= nil then
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." already has a forcefield.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." already has a forcefield.",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"ff"},["Menu"] = true},
@@ -1758,10 +1758,10 @@ SmartAdmin.Commands = {
 						v.Character.AdminFF:Destroy()
 					end)
 				elseif v.Character ~= nil and v.Character:FindFirstChild("AdminFF") == nil then
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." doesn't have a forcefield.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." doesn't have a forcefield.",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"unff"},["Menu"] = true},
@@ -1774,7 +1774,7 @@ SmartAdmin.Commands = {
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 				end)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
@@ -1787,10 +1787,10 @@ SmartAdmin.Commands = {
 						SmartAdmin.Functions.SelectionBox(v.Character,SmartAdmin.Functions.GetColor(v),"AdminBox")
 					end)
 				elseif v.Character ~= nil and v.Character:FindFirstChild("Torso") ~= nil and v.Character.Torso:FindFirstChild("AdminBox") ~= nil then
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." is already boxed.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." is already boxed.",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
@@ -1803,10 +1803,10 @@ SmartAdmin.Commands = {
 						SmartAdmin.Functions.UnSelectionBox(v.Character,"AdminBox")
 					end)
 				elseif v.Character ~= nil and v.Character:FindFirstChild("Torso") ~= nil and v.Character.Torso:FindFirstChild("AdminBox") == nil then
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." isn't boxed.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." isn't boxed.",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
@@ -1823,10 +1823,10 @@ SmartAdmin.Commands = {
 						l.Color = BrickColor.new(SmartAdmin.Functions.GetColor(v)).Color
 					end)
 				elseif v.Character ~= nil and v.Character:FindFirstChild("Torso") ~= nil and v.Character.Torso:FindFirstChild("AdminPLight") ~= nil then
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." already has a point light.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." already has a point light.",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"plight","pl"},["Menu"] = true},
@@ -1839,10 +1839,10 @@ SmartAdmin.Commands = {
 						v.Character.Torso.AdminPLight:Destroy()
 					end)
 				elseif v.Character ~= nil and v.Character:FindFirstChild("Torso") ~= nil and v.Character.Torso:FindFirstChild("AdminPLight") == nil then
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." doesn't have a point light.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." doesn't have a point light.",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"unplight","unpl"},["Menu"] = true},
@@ -1860,10 +1860,10 @@ SmartAdmin.Commands = {
 						l.Color = BrickColor.new(SmartAdmin.Functions.GetColor(v)).Color
 					end)
 				elseif v.Character ~= nil and v.Character:FindFirstChild("Torso") ~= nil and v.Character.Torso:FindFirstChild("AdminSLight") ~= nil then
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." already has a spot light.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." already has a spot light.",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"slight","sl"},["Menu"] = true},
@@ -1876,10 +1876,10 @@ SmartAdmin.Commands = {
 						v.Character.Torso.AdminSLight:Destroy()
 					end)
 				elseif v.Character ~= nil and v.Character:FindFirstChild("Torso") ~= nil and v.Character.Torso:FindFirstChild("AdminSLight") == nil then
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." doesn't have a spot light.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." doesn't have a spot light.",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"unslight","unsl"},["Menu"] = true},
@@ -1892,10 +1892,10 @@ SmartAdmin.Commands = {
 						SmartAdmin.Functions.Fire(v.Character,SmartAdmin.Functions.GetColor(v),"AdminFire")
 					end)
 				elseif v.Character ~= nil and v.Character:FindFirstChild("Torso") ~= nil and v.Character.Torso:FindFirstChild("AdminFire") ~= nil then
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." already has fire.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." already has fire.",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
@@ -1908,10 +1908,10 @@ SmartAdmin.Commands = {
 						SmartAdmin.Functions.UnFire(v.Character,"AdminFire")
 					end)
 				elseif v.Character ~= nil and v.Character:FindFirstChild("Torso") ~= nil and v.Character.Torso:FindFirstChild("AdminFire") == nil then
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." doesn't have fire.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." doesn't have fire.",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
@@ -1924,10 +1924,10 @@ SmartAdmin.Commands = {
 						SmartAdmin.Functions.Sparkles(v.Character,SmartAdmin.Functions.GetColor(v),"AdminSparkles")
 					end)
 				elseif v.Character ~= nil and v.Character:FindFirstChild("Torso") ~= nil and v.Character.Torso:FindFirstChild("AdminSparkles") ~= nil then
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." already has sparkles.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." already has sparkles.",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"spkls"},["Menu"] = true},
@@ -1940,10 +1940,10 @@ SmartAdmin.Commands = {
 						SmartAdmin.Functions.UnSparkles(v.Character,"AdminSparkles")
 					end)
 				elseif v.Character ~= nil and v.Character:FindFirstChild("Torso") ~= nil and v.Character.Torso:FindFirstChild("AdminSparkles") == nil then
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." doesn't have sparkles.",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." doesn't have sparkles.",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"unspkls"},["Menu"] = true},
@@ -1962,20 +1962,20 @@ SmartAdmin.Commands = {
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 				end)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
 	{["Name"] = "warp", ["Example"] = "/warp/player/50", ["Info"] = "Warps a player forward.", ["Rank"] = 1, ["Execute"] = function(Plr, Msg, Rk, Pseudo)
 		if SmartAdmin.Functions.GetSeparationPos(Msg:sub(6),SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys) == nil then
-			SmartAdmin.Functions.Alert("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		local Sep1,Sep2 = SmartAdmin.Functions.GetSeparationPos(Msg,SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys)
 		local Plrs = SmartAdmin.Functions.FindPlayers(Msg:sub(6,Sep1-1), Plr)
 		local Warp = tonumber(Msg:sub(Sep2+1))
 		if Warp == nil then
-			SmartAdmin.Functions.Alert("Error || Invalid warp value.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Invalid warp value.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		for i,v in pairs(Plrs) do
@@ -1985,20 +1985,20 @@ SmartAdmin.Commands = {
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 				end)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {}},
 	{["Name"] = "position", ["Example"] = "/position/player/0,50,0", ["Info"] = "Moves a player to a position.", ["Rank"] = 1, ["Execute"] = function(Plr, Msg, Rk, CmdName)
 		if SmartAdmin.Functions.GetSeparationPos(Msg:sub(#CmdName+2),SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys) == nil then
-			SmartAdmin.Functions.Alert("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		local Sep1,Sep2 = SmartAdmin.Functions.GetSeparationPos(Msg,SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys)
 		local Plrs = SmartAdmin.Functions.FindPlayers(Msg:sub(#CmdName+2,Sep1-1), Plr)
 		local Pos = loadstring("return CFrame.new("..Msg:sub(Sep2+1)..")")
 		if Pos == nil or Pos() == nil then
-			SmartAdmin.Functions.Alert("Error || Invalid position value.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Invalid position value.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		for i,v in pairs(Plrs) do
@@ -2008,20 +2008,20 @@ SmartAdmin.Commands = {
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 				end)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"pos"}},
 	{["Name"] = "speed", ["Example"] = "/speed/player/5", ["Info"] = "Changes a player's walk speed.", ["Rank"] = 1, ["Execute"] = function(Plr, Msg, Rk, CmdName)
 		if SmartAdmin.Functions.GetSeparationPos(Msg:sub(#CmdName+2),SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys) == nil then
-			SmartAdmin.Functions.Alert("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		local Sep1,Sep2 = SmartAdmin.Functions.GetSeparationPos(Msg,SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys)
 		local Plrs = SmartAdmin.Functions.FindPlayers(Msg:sub(#CmdName+2,Sep1-1), Plr)
 		local Speed = tonumber(Msg:sub(Sep2+1))
 		if Speed == nil then
-			SmartAdmin.Functions.Alert("Error || Invalid walk speed value.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Invalid walk speed value.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		for i,v in pairs(Plrs) do
@@ -2031,20 +2031,20 @@ SmartAdmin.Commands = {
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 				end)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"spd"}},
 	{["Name"] = "health", ["Example"] = "/health/player/5", ["Info"] = "Changes a player's health.", ["Rank"] = 1, ["Execute"] = function(Plr, Msg, Rk, Pseudo)
 		if SmartAdmin.Functions.GetSeparationPos(Msg:sub(8),SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys) == nil then
-			SmartAdmin.Functions.Alert("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		local Sep1,Sep2 = SmartAdmin.Functions.GetSeparationPos(Msg,SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys)
 		local Plrs = SmartAdmin.Functions.FindPlayers(Msg:sub(8,Sep1-1), Plr)
 		local Health = tonumber(Msg:sub(Sep2+1))
 		if Health == nil then
-			SmartAdmin.Functions.Alert("Error || Invalid health value.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Invalid health value.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		for i,v in pairs(Plrs) do
@@ -2054,7 +2054,7 @@ SmartAdmin.Commands = {
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 				end)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {}},
@@ -2067,20 +2067,20 @@ SmartAdmin.Commands = {
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 				end)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
 	{["Name"] = "maxhealth", ["Example"] = "/maxhealth/player/5", ["Info"] = "Changes a player's max health.", ["Rank"] = 1, ["Execute"] = function(Plr, Msg, Rk, CmdName)
 		if SmartAdmin.Functions.GetSeparationPos(Msg:sub(#CmdName+2),SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys) == nil then
-			SmartAdmin.Functions.Alert("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		local Sep1,Sep2 = SmartAdmin.Functions.GetSeparationPos(Msg,SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys)
 		local Plrs = SmartAdmin.Functions.FindPlayers(Msg:sub(#CmdName+2,Sep1-1), Plr)
 		local MaxHealth = tonumber(Msg:sub(Sep2+1))
 		if MaxHealth == nil then
-			SmartAdmin.Functions.Alert("Error || Invalid max health value.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Invalid max health value.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		for i,v in pairs(Plrs) do
@@ -2090,20 +2090,20 @@ SmartAdmin.Commands = {
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 				end)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"mhealth","mh"}},
 	{["Name"] = "teleport", ["Example"] = "/teleport/player/player2", ["Info"] = "Teleports a player to another player.", ["Rank"] = 1, ["Execute"] = function(Plr, Msg, Rk, CmdName)
 		if SmartAdmin.Functions.GetSeparationPos(Msg:sub(#CmdName+2),SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys) == nil then
-			SmartAdmin.Functions.Alert("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		local Sep1,Sep2 = SmartAdmin.Functions.GetSeparationPos(Msg,SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys)
 		local Plrs = SmartAdmin.Functions.FindPlayers(Msg:sub(#CmdName+2,Sep1-1), Plr)
 		local Plrs2 = SmartAdmin.Functions.FindPlayers(Msg:sub(Sep2+1), Plr)
 		if #Plrs2 == 0 then
-			SmartAdmin.Functions.Alert("Error || Invalid player value.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Invalid player value.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		for i,v in pairs(Plrs) do
@@ -2114,7 +2114,7 @@ SmartAdmin.Commands = {
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 				end)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"tp","tele"}},
@@ -2127,7 +2127,7 @@ SmartAdmin.Commands = {
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 				end)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
@@ -2140,7 +2140,7 @@ SmartAdmin.Commands = {
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 				end)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
@@ -2153,7 +2153,7 @@ SmartAdmin.Commands = {
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 				end)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
@@ -2169,7 +2169,7 @@ SmartAdmin.Commands = {
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 				end)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"exp"},["Menu"] = true},
@@ -2189,16 +2189,16 @@ SmartAdmin.Commands = {
 						SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 					end)
 				else
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || You cannot kick yourself!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || You cannot kick yourself!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
 	{["Name"] = "changeteam", ["Example"] = "/changeteam/player/TeamName", ["Info"] = "Changes a player's team.", ["Rank"] = 2, ["Execute"] = function(Plr, Msg, Rk, CmdName)
 		if SmartAdmin.Functions.GetSeparationPos(Msg:sub(#CmdName+2),SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys) == nil then
-			SmartAdmin.Functions.Alert("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		local Sep1,Sep2 = SmartAdmin.Functions.GetSeparationPos(Msg,SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys)
@@ -2211,7 +2211,7 @@ SmartAdmin.Commands = {
 			end
 		end
 		if DesTeam == nil and Msg:sub(Sep2+1):lower() ~= "neutral" then
-			SmartAdmin.Functions.Alert("Error || Could not find team.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Could not find team.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		for i,v in pairs(Plrs) do
@@ -2226,7 +2226,7 @@ SmartAdmin.Commands = {
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 				end)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"cteam","ct"}},
@@ -2249,10 +2249,10 @@ SmartAdmin.Commands = {
 					end)
 					SmartAdmin.Functions.SavePlayerData(v)
 				else
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || You cannot ban yourself!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || You cannot ban yourself!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
@@ -2275,10 +2275,10 @@ SmartAdmin.Commands = {
 					end)
 					SmartAdmin.Functions.SavePlayerData(v)
 				else
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || You cannot lag yourself!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || You cannot lag yourself!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
@@ -2304,10 +2304,10 @@ SmartAdmin.Commands = {
 						Debris:AddItem(val,10)
 					end)
 				else
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || You cannot mute yourself!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || You cannot mute yourself!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
@@ -2323,16 +2323,16 @@ SmartAdmin.Commands = {
 						Debris:AddItem(val,10)
 					end)
 				else
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || You cannot unmute yourself!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || You cannot unmute yourself!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {},["Menu"] = true},
 	{["Name"] = "hide", ["Example"] = "/hide/player/Backpack", ["Info"] = "Hides a player's coregui component.", ["Rank"] = 5, ["Execute"] = function(Plr, Msg, Rk, CmdName)
 		if SmartAdmin.Functions.GetSeparationPos2(Msg:sub(#CmdName+2),SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys) == nil then
-			SmartAdmin.Functions.Alert("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		local Sep1,Sep2 = SmartAdmin.Functions.GetSeparationPos2(Msg:sub(#CmdName+2),SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys)
@@ -2357,7 +2357,7 @@ SmartAdmin.Commands = {
 			Component = Enum.CoreGuiType.All
 			CompNum = 4
 		else
-			SmartAdmin.Functions.Alert("Error || Invalid CoreGui type.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Invalid CoreGui type.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		for i,v in pairs(Plrs) do
@@ -2366,19 +2366,19 @@ SmartAdmin.Commands = {
 					local Value = Instance.new("NumberValue",TabletInfo)
 					Value.Name = v.Name.."HideThem"
 					Value.Value = CompNum
-					SmartAdmin.Functions.Alert("Your "..tostring(Component):sub(18).." has been hidden.",v,SmartAdmin.Functions.GetColor(v),5,1)
+					SmartAdmin.Functions.CreateTablet("Your "..tostring(Component):sub(18).." has been hidden.",v,SmartAdmin.Functions.GetColor(v),5,1)
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 					SmartAdmin.Functions.UpdateColors(v.Character,SmartAdmin.Functions.GetColor(v))
 				end)
 				SmartAdmin.Functions.SavePlayerData(v)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {}},
 	{["Name"] = "show", ["Example"] = "/show/player/Backpack", ["Info"] = "Shows a player's coregui component.", ["Rank"] = 5, ["Execute"] = function(Plr, Msg, Rk, CmdName)
 		if SmartAdmin.Functions.GetSeparationPos2(Msg:sub(#CmdName+2),SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys) == nil then
-			SmartAdmin.Functions.Alert("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		local Sep1,Sep2 = SmartAdmin.Functions.GetSeparationPos2(Msg:sub(#CmdName+2),SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys)
@@ -2403,7 +2403,7 @@ SmartAdmin.Commands = {
 			Component = Enum.CoreGuiType.All
 			CompNum = 4
 		else
-			SmartAdmin.Functions.Alert("Error || Invalid CoreGui type.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Invalid CoreGui type.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		for i,v in pairs(Plrs) do
@@ -2412,19 +2412,19 @@ SmartAdmin.Commands = {
 					local Value = Instance.new("NumberValue",TabletInfo)
 					Value.Name = v.Name.."ShowThem"
 					Value.Value = CompNum
-					SmartAdmin.Functions.Alert("Your "..tostring(Component):sub(18).." has been shown.",v,SmartAdmin.Functions.GetColor(v),5,1)
+					SmartAdmin.Functions.CreateTablet("Your "..tostring(Component):sub(18).." has been shown.",v,SmartAdmin.Functions.GetColor(v),5,1)
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 					SmartAdmin.Functions.UpdateColors(v.Character,SmartAdmin.Functions.GetColor(v))
 				end)
 				SmartAdmin.Functions.SavePlayerData(v)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {}},
 	{["Name"] = "colorset", ["Example"] = "/colorset/player/Bright yellow", ["Info"] = "Ranks a player.", ["Rank"] = 4, ["Execute"] = function(Plr, Msg, Rk, CmdName)
 		if SmartAdmin.Functions.GetSeparationPos2(Msg:sub(#CmdName+2),SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys) == nil then
-			SmartAdmin.Functions.Alert("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		local Sep1,Sep2 = SmartAdmin.Functions.GetSeparationPos2(Msg:sub(#CmdName+2),SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys)
@@ -2433,20 +2433,20 @@ SmartAdmin.Commands = {
 		local Plrs = SmartAdmin.Functions.FindPlayers(Msg:sub(#CmdName+2,Sep1-1), Plr)
 		local Color = BrickColor.new(Msg:sub(Sep2+1))
 		if Color == BrickColor.new("not a real color") and Msg:sub(Sep2+1) ~= "Medium stone grey" and Msg:sub(Sep2+1) ~= "194" then
-			SmartAdmin.Functions.Alert("Error || Invalid color.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Invalid color.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		for i,v in pairs(Plrs) do
 			if SmartAdmin.Functions.GetRank(v) <= Rk then
 				pcall(function()
 					SmartAdmin.Functions.GetPlayerData(v).Color = tostring(Color)
-					SmartAdmin.Functions.Alert("Your color has been changed to "..tostring(Color)..".",v,SmartAdmin.Functions.GetColor(v),5,1)
+					SmartAdmin.Functions.CreateTablet("Your color has been changed to "..tostring(Color)..".",v,SmartAdmin.Functions.GetColor(v),5,1)
 					SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 					SmartAdmin.Functions.UpdateColors(v.Character,SmartAdmin.Functions.GetColor(v))
 				end)
 				SmartAdmin.Functions.SavePlayerData(v)
 			else
-				SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {"cset","cs"}},
@@ -2464,14 +2464,14 @@ SmartAdmin.Commands = {
 	end, ["Aliases"] = {"h"},["Menu"] = false},
 	{["Name"] = "rank", ["Example"] = "/rank/player/5", ["Info"] = "Ranks a player.", ["Rank"] = 5, ["Execute"] = function(Plr, Msg, Rk, CmdName, Pseudo)
 		if SmartAdmin.Functions.GetSeparationPos(Msg:sub(6),SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys) == nil then
-			SmartAdmin.Functions.Alert("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Incorrect command syntax.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		local Sep1,Sep2 = SmartAdmin.Functions.GetSeparationPos(Msg,SmartAdmin.Functions.GetPlayerData(Plr).SeparationKeys)
 		local Plrs = SmartAdmin.Functions.FindPlayers(Msg:sub(6,Sep1-1), Plr)
 		local Rank = tonumber(Msg:sub(Sep2+1))
 		if Rank == nil then
-			SmartAdmin.Functions.Alert("Error || Invalid rank.",Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || Invalid rank.",Plr,BrickColor.Red(),5,1)
 			return
 		end
 		Rank = Rank > 7 and 7 or Rank
@@ -2482,18 +2482,18 @@ SmartAdmin.Commands = {
 					if Rank <= Rk then
 						pcall(function()
 							SmartAdmin.Functions.GetPlayerData(v).Rank = Rank
-							SmartAdmin.Functions.Alert("You are rank "..Rank.."("..SmartAdmin.Ranks[Rank]..") in Smart Admin.",v,SmartAdmin.Functions.GetColor(v),5,1)
+							SmartAdmin.Functions.CreateTablet("You are rank "..Rank.."("..SmartAdmin.Ranks[Rank]..") in Smart Admin.",v,SmartAdmin.Functions.GetColor(v),5,1)
 							SmartAdmin.Functions.Highlight(v.Character,SmartAdmin.Functions.GetColor(v),5)
 						end)
 						SmartAdmin.Functions.SavePlayerData(v)
 					else
-						SmartAdmin.Functions.Alert("Error || You cannot rank somebody to a higher rank than you are!",Plr,BrickColor.Red(),5,1)
+						SmartAdmin.Functions.CreateTablet("Error || You cannot rank somebody to a higher rank than you are!",Plr,BrickColor.Red(),5,1)
 					end
 				else
-					SmartAdmin.Functions.Alert("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
+					SmartAdmin.Functions.CreateTablet("Error || "..v.Name.." outranks you!",Plr,BrickColor.Red(),5,1)
 				end
 			else
-				SmartAdmin.Functions.Alert("Error || You cannot rank yourself!",Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || You cannot rank yourself!",Plr,BrickColor.Red(),5,1)
 			end
 		end
 	end, ["Aliases"] = {}},
@@ -2528,12 +2528,12 @@ SmartAdmin.Commands = {
 		if Func then
 			local Worked,Error = ypcall(Func)
 			if Error then
-				SmartAdmin.Functions.Alert("Error || "..Error,Plr,BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..Error,Plr,BrickColor.Red(),5,1)
 			else
-				SmartAdmin.Functions.Alert("Script ran successfully!",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
+				SmartAdmin.Functions.CreateTablet("Script ran successfully!",Plr,SmartAdmin.Functions.GetColor(Plr),5,1)
 			end
 		else
-			SmartAdmin.Functions.Alert("Error || "..Error,Plr,BrickColor.Red(),5,1)
+			SmartAdmin.Functions.CreateTablet("Error || "..Error,Plr,BrickColor.Red(),5,1)
 		end
 		PrintPlayer = nil
 	end, ["Aliases"] = {"exe"}},
@@ -2570,27 +2570,27 @@ SmartAdmin.Chatted = function(Msg,Plr,WantedRank)
 									v.Execute(type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],Msg,WantedRank or SmartAdmin.Functions.GetRank(Plr),v.Name,Plr == "PseudoPlayer")
 								end)
 								if not Worked then
-									SmartAdmin.Functions.Alert("Error || "..Error,type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
+									SmartAdmin.Functions.CreateTablet("Error || "..Error,type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
 								end
 							else
 								if v.Menu then
 									for i2,v2 in pairs(SmartAdmin.Players) do
 										if SmartAdmin.Functions.GetPlayer(v2.Name) and v2.Rank <= SmartAdmin.Functions.GetRank(Plr) then
-											SmartAdmin.Functions.Alert(v2.Name,Plr,v2.Color,nil,7,{Command = v,Player = v2})
+											SmartAdmin.Functions.CreateTablet(v2.Name,Plr,v2.Color,nil,7,{Command = v,Player = v2})
 										end
 									end
-									SmartAdmin.Functions.Alert("Run "..v.Name.." on who?",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
-									SmartAdmin.Functions.Alert("Dismiss",Plr,BrickColor.Red(),nil,2)
+									SmartAdmin.Functions.CreateTablet("Run "..v.Name.." on who?",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
+									SmartAdmin.Functions.CreateTablet("Dismiss",Plr,BrickColor.Red(),nil,2)
 								else
-									SmartAdmin.Functions.Alert("Error || A menu cannot be shown for this command.",type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
+									SmartAdmin.Functions.CreateTablet("Error || A menu cannot be shown for this command.",type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
 								end
 							end
 						else
-							SmartAdmin.Functions.Alert("Error || Incorrect command syntax.",type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
+							SmartAdmin.Functions.CreateTablet("Error || Incorrect command syntax.",type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
 						end
 					else
 						if SmartAdmin.Functions.GetRank(Plr) > 0 then
-							SmartAdmin.Functions.Alert("Error || Your rank ("..SmartAdmin.Functions.GetRank(Plr)..") is not high enough!",type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
+							SmartAdmin.Functions.CreateTablet("Error || Your rank ("..SmartAdmin.Functions.GetRank(Plr)..") is not high enough!",type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
 						end
 					end
 				else
@@ -2619,34 +2619,34 @@ SmartAdmin.Chatted = function(Msg,Plr,WantedRank)
 										v.Execute(type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],Msg,WantedRank or SmartAdmin.Functions.GetRank(Plr),FoundAlias,Plr == "PseudoPlayer")
 									end)
 									if not Worked then
-										SmartAdmin.Functions.Alert("Error || "..Error,type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
+										SmartAdmin.Functions.CreateTablet("Error || "..Error,type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
 									end
 								else
 									if v.Menu then
 										for i2,v2 in pairs(SmartAdmin.Players) do
 											if SmartAdmin.Functions.GetPlayer(v2.Name) and v2.Rank <= SmartAdmin.Functions.GetRank(Plr) then
-												SmartAdmin.Functions.Alert(v2.Name,Plr,v2.Color,nil,7,{Command = v,Player = v2})
+												SmartAdmin.Functions.CreateTablet(v2.Name,Plr,v2.Color,nil,7,{Command = v,Player = v2})
 											end
 										end
-										SmartAdmin.Functions.Alert("Run "..v.Name.." on who?",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
-										SmartAdmin.Functions.Alert("Dismiss",Plr,BrickColor.Red(),nil,2)
+										SmartAdmin.Functions.CreateTablet("Run "..v.Name.." on who?",Plr,SmartAdmin.Functions.GetColor(Plr),nil,4)
+										SmartAdmin.Functions.CreateTablet("Dismiss",Plr,BrickColor.Red(),nil,2)
 									else
-										SmartAdmin.Functions.Alert("Error || A menu cannot be shown for this command.",type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
+										SmartAdmin.Functions.CreateTablet("Error || A menu cannot be shown for this command.",type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
 									end
 								end
 							else
-								SmartAdmin.Functions.Alert("Error || Incorrect command syntax.",type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
+								SmartAdmin.Functions.CreateTablet("Error || Incorrect command syntax.",type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
 							end
 						else
 							if SmartAdmin.Functions.GetRank(Plr) > 0 then
-								SmartAdmin.Functions.Alert("Error || Your rank ("..SmartAdmin.Functions.GetRank(Plr)..") is not high enough!",type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
+								SmartAdmin.Functions.CreateTablet("Error || Your rank ("..SmartAdmin.Functions.GetRank(Plr)..") is not high enough!",type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
 							end
 						end
 					end
 				end
 			end)
 			if not Worked then
-				SmartAdmin.Functions.Alert("Error || "..Error,type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
+				SmartAdmin.Functions.CreateTablet("Error || "..Error,type(Plr) == "userdata" and Plr or Players:GetPlayers()[1],BrickColor.Red(),5,1)
 			end
 			if FoundCommand then
 				break
@@ -2655,7 +2655,7 @@ SmartAdmin.Chatted = function(Msg,Plr,WantedRank)
 	end)
 end
 local FirstTime = true
-SmartAdmin.PlayerAdded = function(Player)
+SmartAdmin.PlayerAdded = function(Player) -- Player Added function.
 	if IsServerside then
 		SmartAdmin.Functions.LoadPlayerData(Player)
 	end
@@ -2663,11 +2663,11 @@ SmartAdmin.PlayerAdded = function(Player)
 		for i,v in pairs(SmartAdmin.Players) do
 			if SmartAdmin.Functions.GetPlayer(v.Name) ~= nil and v.Rank > 0 and v.Name ~= Player.Name then
 				if SmartAdmin.Functions.GetRank(Player) == nil or SmartAdmin.Functions.GetRank(Player) >= 0 then
-					SmartAdmin.Functions.Alert(Player.Name.." has entered the server!",SmartAdmin.Functions.GetPlayer(v.Name),SmartAdmin.Functions.GetColor(v.Name),5,1)
+					SmartAdmin.Functions.CreateTablet(Player.Name.." has entered the server!",SmartAdmin.Functions.GetPlayer(v.Name),SmartAdmin.Functions.GetColor(v.Name),5,1)
 				elseif SmartAdmin.Functions.GetRank(Player) ~= nil and SmartAdmin.Functions.GetRank(Player) == -1 then
-					SmartAdmin.Functions.Alert(Player.Name.." has been crashed due to his/her rank of -1!",SmartAdmin.Functions.GetPlayer(v.Name),SmartAdmin.Functions.GetColor(Player),5,1)
+					SmartAdmin.Functions.CreateTablet(Player.Name.." has been crashed due to his/her rank of -1!",SmartAdmin.Functions.GetPlayer(v.Name),SmartAdmin.Functions.GetColor(Player),5,1)
 				elseif SmartAdmin.Functions.GetRank(Player) ~= nil and SmartAdmin.Functions.GetRank(Player) == -2 then
-					SmartAdmin.Functions.Alert(Player.Name.." has been lagged due to his/her rank of -2!",SmartAdmin.Functions.GetPlayer(v.Name),SmartAdmin.Functions.GetColor(Player),5,1)
+					SmartAdmin.Functions.CreateTablet(Player.Name.." has been lagged due to his/her rank of -2!",SmartAdmin.Functions.GetPlayer(v.Name),SmartAdmin.Functions.GetColor(Player),5,1)
 				end
 			end
 		end
@@ -2690,7 +2690,7 @@ SmartAdmin.PlayerAdded = function(Player)
 		NLS(RemoteCrashCode,Player.Backpack)
 		NLS(ClientCode,Player.Backpack)
 	end
-	if Rank == -1 then
+	if Rank == -1 then -- They are banned. Crash them.
 		local v = Instance.new("StringValue",Lighting)
 		v.Name = Player.Name.."CrashThem"
 		Debris:AddItem(v,30)
@@ -2698,7 +2698,7 @@ SmartAdmin.PlayerAdded = function(Player)
 			wait(15)
 			Player:Destroy()
 		end)
-	elseif Rank == -2 then
+	elseif Rank == -2 then -- They are lagged. Lag them.
 		local Worked = pcall(function()
 			local v = Instance.new("StringValue",Lighting)
 			v.Name = Player.Name.."LagThem"
@@ -2712,7 +2712,7 @@ SmartAdmin.PlayerAdded = function(Player)
 		local Con = Player.Chatted:connect(function(m) SmartAdmin.Chatted(m,Player) end)
 		table.insert(SmartAdmin.Connections,Con)
 		if Rank > 0 then
-			SmartAdmin.Functions.Alert("You are rank "..Rank.."("..SmartAdmin.Ranks[Rank]..") in Smart Admin.",Player,SmartAdmin.Functions.GetColor(Player),7.5,1)
+			SmartAdmin.Functions.CreateTablet("You are rank "..Rank.."("..SmartAdmin.Ranks[Rank]..") in Smart Admin.",Player,SmartAdmin.Functions.GetColor(Player),7.5,1)
 		end
 	end
 end
@@ -2722,7 +2722,7 @@ end
 FirstTime = false
 LastPlayers = Players:GetPlayers()
 
-function QuaternionFromCFrame(cf)
+function QuaternionFromCFrame(cf) -- Credit to Stravant for the function.
 	local mx,  my,  mz,
 		  m00, m01, m02,
 		  m10, m11, m12,
@@ -2752,7 +2752,7 @@ function QuaternionFromCFrame(cf)
 	end
 end
  
-function QuaternionToCFrame(px, py, pz, x, y, z, w)
+function QuaternionToCFrame(px, py, pz, x, y, z, w) --  Credit to Stravant.
 	local xs, ys, zs = x + x, y + y, z + z
 	local wx, wy, wz = w*xs, w*ys, w*zs
 	--
@@ -2769,7 +2769,7 @@ function QuaternionToCFrame(px, py, pz, x, y, z, w)
 			  xz - wy,   yz + wx,   1-(xx+yy))
 end
  
-function QuaternionSlerp(a, b, t)
+function QuaternionSlerp(a, b, t) -- Credit to Stravant.
 	local cosTheta = a[1]*b[1] + a[2]*b[2] + a[3]*b[3] + a[4]*b[4]
 	local startInterp, finishInterp;
 	if cosTheta >= 0.0001 then
@@ -2801,7 +2801,7 @@ end
 
 local TweenTable = {}
  
-function LerpCFrame(a, b, length)
+function LerpCFrame(a, b, length) -- Credit to Stravant for the Quaternion functions.
 	local qa = {QuaternionFromCFrame(a)}
 	local qb = {QuaternionFromCFrame(b)}
 	local ax, ay, az = a.x, a.y, a.z
@@ -2812,8 +2812,8 @@ function LerpCFrame(a, b, length)
 	return cf
 end
 
-function Update()
-	if SHUTDOWN == true then
+function Update() -- Update on every frame.
+	if SHUTDOWN == true then -- Shutdown the admin.
 		RunService = nil
 		Instance.new("BoolValue",TabletInfo).Name = "RemovedAdmin"
 		Debris:AddItem(TabletInfo.RemovedAdmin,5)
@@ -2856,7 +2856,7 @@ function Update()
 			end)
 		end
 		if tablefind(SmartAdmin.Players,v.Name,"Name") then
-			SmartAdmin.Functions.UpdateAlerts(v)
+			SmartAdmin.Functions.UpdateTablets(v)
 		end
 	end
 	LastPlayers = Players:GetPlayers()
