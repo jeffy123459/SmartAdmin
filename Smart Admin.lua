@@ -14,7 +14,7 @@ SmartAdmin.Ranks = { -- You can change the names of the ranks, just don't change
 	[7] = "Owner",
 }
 SmartAdmin.Players = { -- I'm sure people can figure this out. Change the name. Use the rank numbers above for rank.
-	{["Name"] = "kirkyturky12", ["Rank"] = 7, ["Color"] = "New Yeller", ["SeparationKeys"] = {"/", ">", " "}},
+	{["Name"] = "cxcharlie", ["Rank"] = 7, ["Color"] = "New Yeller", ["SeparationKeys"] = {"/", ">", " "}},
 }
 SmartAdmin.Settings = {
 	["Colors"] = {"New Yeller","Bright blue","Bright red","Bright green","Bright violet","Neon orange","Lime green","Alder"}, -- The colors randomly picked for players.
